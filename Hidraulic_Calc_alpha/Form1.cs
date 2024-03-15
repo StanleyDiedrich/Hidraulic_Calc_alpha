@@ -17,11 +17,18 @@ namespace Hidraulic_Calc_alpha
     public partial class Form1 : System.Windows.Forms.Form
     {
         Autodesk.Revit.DB.Document Doc;
+        
+        public SelectedSystems _selectedsystems { get; set; }
+        
         public Form1(Autodesk.Revit.DB.Document document)
         {
             
             Doc = document;
+            _selectedsystems = new SelectedSystems();
+            
             InitializeComponent();
+            
+            
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -34,17 +41,25 @@ namespace Hidraulic_Calc_alpha
                 {
                     var newpipe = pipe as Pipe;
                     var fI = newpipe as MEPCurve;
-                    string system = fI.MEPSystem.Name;
-                    if (system != null)
+                    foreach (Parameter parameter in newpipe.Parameters)
                     {
-                        if (!systemnames.Contains(system))
+                        if (parameter.Definition.Name.Equals("Сокращение для системы"))
                         {
-                            systemnames.Add(system);
+                            string system = parameter.AsString();
+                            if (system != null)
+                            {
+                                if (!systemnames.Contains(system))
+                                {
+                                    systemnames.Add(system);
+                                }
+                            }
                         }
                     }
+                    
+                    
 
                 }
-                IList<string> selectedsystems = new List<string>();
+               // IList<string> selectedsystems = new List<string>();
                 foreach (string system in systemnames)
                 {
                     systemBox.Items.Add(system);
@@ -54,7 +69,52 @@ namespace Hidraulic_Calc_alpha
             {
                 TaskDialog.Show("Error", "Loading of systems is failed");
             }
-           
+
+            systemBox.SelectionMode = SelectionMode.MultiExtended;
+        }
+
+        private void systemBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            SelectedSystems selectedSystems = new SelectedSystems();
+            selectedSystems.systems = new List<string>();
+            var selectedObjectCollection =  systemBox.SelectedItems;
+
+            foreach (Object sOC in selectedObjectCollection)
+            {
+                SelectedSystem system = new SelectedSystem(sOC.ToString());
+                system.selected = true;
+                _selectedsystems.systems.Add(system.name.ToString());
+
+
+            }
+            
+
+
+        }
+
+        private void Start_btn_Click(object sender, EventArgs e)
+        {
+            //string text = "";
+            _selectedsystems.preparedsystems = new List<string>();
+            foreach (var sys in _selectedsystems.systems)
+            {
+                if (!_selectedsystems.preparedsystems.Contains(sys))
+                {
+                    _selectedsystems.preparedsystems.Add(sys);
+                }
+            }
+            this.Close();
+            //var newlist2 = newlist.Distinct();
+            /*foreach (string a in newlist)
+            {
+                if (!text.Contains(a))
+                {
+                    text += a + '\n';
+                }
+                
+                
+            }*/
+            //TaskDialog.Show("Смотри че", $"{newlist2.ToString()}\n");
         }
     }
 }

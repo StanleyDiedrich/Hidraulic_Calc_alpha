@@ -50,6 +50,7 @@
             this.Start_btn.TabIndex = 2;
             this.Start_btn.Text = "Поехали";
             this.Start_btn.UseVisualStyleBackColor = true;
+            this.Start_btn.Click += new System.EventHandler(this.Start_btn_Click);
             // 
             // systemBox
             // 
@@ -59,6 +60,7 @@
             this.systemBox.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
             this.systemBox.Size = new System.Drawing.Size(320, 186);
             this.systemBox.TabIndex = 3;
+            this.systemBox.SelectedIndexChanged += new System.EventHandler(this.systemBox_SelectedIndexChanged);
             // 
             // Form1
             // 
