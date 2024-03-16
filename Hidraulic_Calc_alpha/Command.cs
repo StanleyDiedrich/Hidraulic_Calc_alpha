@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Plumbing;
@@ -58,7 +59,7 @@ namespace Hidraulic_Calc_alpha
             }
             return systemtype;
         }
-        public ElementId FindNextElement(Document doc, ElementId elementId, List<ElementId> foundedelements, string systemtype)
+        public ElementId FindNextElement(Document doc, ElementId elementId, Dictionary<ElementId,string> foundedelements, string systemtype)
         {
 
             ElementId ownerId = elementId;
@@ -71,18 +72,18 @@ namespace Hidraulic_Calc_alpha
             try
             {
 
-                if (element is FamilyInstance )
+                if (element is FamilyInstance)
                 {
                     FamilyInstance FI = element as FamilyInstance;
                     mepModel = FI.MEPModel;
                     connectorSet = mepModel.ConnectorManager.Connectors;
 
                 }
-               
-                    
+
+
                 if (element is Pipe)
                 {
-                   Pipe pipe = element as Pipe;
+                    Pipe pipe = element as Pipe;
                     connectorSet = pipe.ConnectorManager.Connectors;
                 }
                 if (element is FlexPipe)
@@ -93,81 +94,101 @@ namespace Hidraulic_Calc_alpha
 
                 foreach (Connector connector in connectorSet)
                 {
-                    ConnectorSet nextconnectors = connector.AllRefs;
-                    foreach (Connector nextconnector in nextconnectors)
+                    double connectorflow = connector.Flow;
+                    if (connector.PipeSystemType.ToString().Equals(systemtype))
                     {
-
-                        if (doc.GetElement(nextconnector.Owner.Id) is PipingSystem)
+                        ConnectorSet nextconnectors = connector.AllRefs;
+                        foreach (Connector nextconnector in nextconnectors)
                         {
 
-                            continue;
-                        }
-                        else if (nextconnector.Owner.Id == ownerId)
-                        {
-
-                            continue;
-                        }
-                        else if (nextconnectors.Size <1)
-                        { continue; }
-
-                        /*else if (nextconnectors.Size==1)
-                        {
-                            continue;
-                        }*/
-
-
-
-                        else
-                        {
-                            if (nextconnector.Domain == Domain.DomainHvac || nextconnector.Domain== Domain.DomainPiping)
+                            if (doc.GetElement(nextconnector.Owner.Id) is PipingSystem)
                             {
-                                if (systemtype == "SupplyHydronic")
-                                {
-                                    if (nextconnector.Direction is FlowDirectionType.Out && nextconnector.Flow != 0)
-                                    {
-                                        foundedelementId = nextconnector.Owner.Id;
-                                    }
-                                    else if (nextconnector.Direction is FlowDirectionType.Bidirectional && nextconnector.Flow != 0)
-                                    {
-                                        if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.Contains(nextconnector.Owner.Id))
-                                        {
-                                            foundedelementId = nextconnector.Owner.Id;
-                                        }
-                                        else
-                                        { continue; }
 
-                                    }
-
-
-                                }
-                                if (systemtype == "ReturnHydronic")
-                                {
-                                    if (nextconnector.Direction is FlowDirectionType.In && nextconnector.Flow != 0)
-                                    {
-                                        foundedelementId = nextconnector.Owner.Id;
-                                    }
-                                    else if (nextconnector.Direction is FlowDirectionType.Bidirectional && nextconnector.Flow != 0)
-                                    {
-                                        if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.Contains(nextconnector.Owner.Id))
-                                        {
-                                            foundedelementId = nextconnector.Owner.Id;
-                                        }
-                                        else
-                                        { continue; }
-
-                                    }
-
-
-                                }
-
+                                continue;
                             }
-                            else
+                            else if (nextconnector.Owner.Id == ownerId)
+                            {
+
+                                continue;
+                            }
+                            else if (nextconnectors.Size < 1)
                             { continue; }
 
-                            
+                            /*else if (nextconnectors.Size==1)
+                            {
+                                continue;
+                            }*/
 
 
+
+                            else
+                            {
+
+
+
+                                if (nextconnector.Domain == Domain.DomainHvac || nextconnector.Domain == Domain.DomainPiping)
+                                {
+                                    double nextconnectorfflow = nextconnector.Flow;
+                                    if (systemtype == "SupplyHydronic")
+                                    {
+                                        if (nextconnector.Direction is FlowDirectionType.Out)
+                                        {
+                                            if (nextconnectorfflow > connectorflow || nextconnectorfflow == connectorflow)
+                                            {
+                                                foundedelementId = nextconnector.Owner.Id;
+                                            }
+
+
+                                        }
+                                        else if (nextconnector.Direction is FlowDirectionType.Bidirectional && nextconnector.Flow != 0)
+                                        {
+                                            if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.ContainsKey(nextconnector.Owner.Id))
+                                            {
+                                                foundedelementId = nextconnector.Owner.Id;
+                                            }
+                                            else
+                                            { continue; }
+
+                                        }
+
+
+                                    }
+                                    if (systemtype == "ReturnHydronic")
+                                    {
+                                        if (nextconnector.Direction is FlowDirectionType.In)
+                                        {
+
+
+                                            foundedelementId = nextconnector.Owner.Id;
+
+
+
+                                        }
+                                        else if (nextconnector.Direction is FlowDirectionType.Bidirectional)
+                                        {
+                                            if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.ContainsKey(nextconnector.Owner.Id))
+                                            {
+                                                foundedelementId = nextconnector.Owner.Id;
+                                            }
+                                            else
+                                            { continue; }
+
+                                        }
+
+
+                                    }
+
+                                }
+                                else
+                                { continue; }
+
+
+
+
+                            }
                         }
+
+
 
 
 
@@ -176,10 +197,11 @@ namespace Hidraulic_Calc_alpha
 
 
                     }
+                    else { continue; }
+
+
+
                 }
-
-
-
             }
             catch (Exception ex)
             {
@@ -210,6 +232,7 @@ namespace Hidraulic_Calc_alpha
             }
             TaskDialog.Show("Смотри че", $"{text}\n");*/
             var count = 0;
+            List<Dictionary<ElementId,string>> listoffoundedelements = new List<Dictionary<ElementId, string>>();
            Dictionary<ElementId, string > virtualequipments = new Dictionary<ElementId, string>();
             foreach (string system in selectedSystems.preparedsystems)
             {
@@ -231,12 +254,12 @@ namespace Hidraulic_Calc_alpha
                 ElementId elementId = virtualequipment.Key;
 
 
-                List<ElementId> foundedelements = new List<ElementId>();
-                foundedelements.Add(elementId);
+                Dictionary<ElementId,string> foundedelements = new Dictionary<ElementId, string>();
+                foundedelements.Add(elementId, selectedsystem);
                 Element element = doc.GetElement(elementId);
                 string systemtype = GetSystemType(element);
                 var foundedelement = FindNextElement(doc, elementId, foundedelements, systemtype);
-                foundedelements.Add(foundedelement);
+                foundedelements.Add(foundedelement, selectedsystem);
                 int index = foundedelements.Count - 1;
                 ElementId nextelement = null;
 
@@ -248,19 +271,19 @@ namespace Hidraulic_Calc_alpha
                     do
                     {
 
-                        nextelement = foundedelements.Last();
+                        nextelement = foundedelements.Last().Key;
 
                         f = FindNextElement(doc, nextelement, foundedelements, systemtype);
                         if (f != null)
                         {
 
 
-                            if (!foundedelements.Contains(f))
+                            if (!foundedelements.ContainsKey(f))
                             {
 
                                 if (f != nextelement)
                                 {
-                                    foundedelements.Add(f);
+                                    foundedelements.Add(f, selectedsystem);
                                 }
                                 else
                                 {
@@ -284,6 +307,7 @@ namespace Hidraulic_Calc_alpha
 
                     }
                     while (f != nextelement || f == null);
+                    listoffoundedelements.Add(foundedelements);
                     //TaskDialog.Show("Res", selectedelement.Id.ToString());
 
 
@@ -292,23 +316,27 @@ namespace Hidraulic_Calc_alpha
                 {
 
                 }
+
+            }
+            foreach (var foundedelements in listoffoundedelements)
+            {
                 int number = 0;
                 string letter = "";
-
+               
                 double prev_area = 0;
                 double prev_flow = 0;
 
                 string text2 = string.Empty;
-               
                 foreach (var foundedelement2 in foundedelements)
                 {
-                    string a = foundedelement2.IntegerValue.ToString();
-                    text2 += a+"\n";
+                    string selectedsystem = foundedelement2.Value;
+                    string a = foundedelement2.Key.IntegerValue.ToString();
+                    text2 += a + "\n";
 
-                    if (foundedelement2 != null)
+                    if (foundedelement2.Key != null)
                     {
-                        Element element2 = doc.GetElement(foundedelement2);
-                        if (foundedelement2 == foundedelements.First())
+                        Element element2 = doc.GetElement(foundedelement2.Key);
+                        if (foundedelement2.Key == foundedelements.First().Key)
                         {
                             letter = "_a";
                         }
@@ -316,9 +344,9 @@ namespace Hidraulic_Calc_alpha
                         {
                             letter = "";
                         }
-                        if (element is FamilyInstance)
+                        if (element2 is FamilyInstance)
                         {
-                            FamilyInstance familyInstance = element as FamilyInstance;
+                            FamilyInstance familyInstance = element2 as FamilyInstance;
                             MEPModel mepmodel = familyInstance.MEPModel;
                             ConnectorSet connectorSet = mepmodel.ConnectorManager.Connectors;
                             double area = 0;
@@ -364,9 +392,9 @@ namespace Hidraulic_Calc_alpha
                                 }
                             }
                         }
-                        if (element is Pipe)
+                        if (element2 is Pipe)
                         {
-                            Pipe familyInstance = element as Pipe;
+                            Pipe familyInstance = element2 as Pipe;
 
                             ConnectorSet connectorSet = familyInstance.ConnectorManager.Connectors;
                             double area = 0;
@@ -414,8 +442,12 @@ namespace Hidraulic_Calc_alpha
 
 
                 }
-                TaskDialog.Show($"Вот че ", text2);
             }
+                
+               
+                
+                //TaskDialog.Show($"Вот че ", text2);
+            
 
             return Result.Succeeded;
         }
