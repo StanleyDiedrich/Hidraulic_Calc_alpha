@@ -107,6 +107,9 @@ namespace Hidraulic_Calc_alpha
 
                             continue;
                         }
+                        else if (nextconnectors.Size <1)
+                        { continue; }
+
                         /*else if (nextconnectors.Size==1)
                         {
                             continue;
@@ -116,48 +119,54 @@ namespace Hidraulic_Calc_alpha
 
                         else
                         {
-
-
-                            if (systemtype == "SupplyHydronic")
+                            if (nextconnector.Domain == Domain.DomainHvac || nextconnector.Domain== Domain.DomainPiping)
                             {
-                                if (nextconnector.Direction is FlowDirectionType.Out && nextconnector.Flow!=0)
+                                if (systemtype == "SupplyHydronic")
                                 {
-                                    foundedelementId = nextconnector.Owner.Id;
-                                }
-                                else if (nextconnector.Direction is FlowDirectionType.Bidirectional && nextconnector.Flow != 0)
-                                {
-                                    if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.Contains(nextconnector.Owner.Id))
+                                    if (nextconnector.Direction is FlowDirectionType.Out && nextconnector.Flow != 0)
                                     {
                                         foundedelementId = nextconnector.Owner.Id;
                                     }
-                                    else
-                                    { continue; }
+                                    else if (nextconnector.Direction is FlowDirectionType.Bidirectional && nextconnector.Flow != 0)
+                                    {
+                                        if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.Contains(nextconnector.Owner.Id))
+                                        {
+                                            foundedelementId = nextconnector.Owner.Id;
+                                        }
+                                        else
+                                        { continue; }
+
+                                    }
+
 
                                 }
-
-
-                            }
-                            if (systemtype == "ReturnHydronic")
-                            {
-                                if (nextconnector.Direction is FlowDirectionType.In && nextconnector.Flow != 0)
+                                if (systemtype == "ReturnHydronic")
                                 {
-                                    foundedelementId = nextconnector.Owner.Id;
-                                }
-                                else if (nextconnector.Direction is FlowDirectionType.Bidirectional && nextconnector.Flow != 0) 
-                                {
-                                    if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.Contains(nextconnector.Owner.Id))
+                                    if (nextconnector.Direction is FlowDirectionType.In && nextconnector.Flow != 0)
                                     {
                                         foundedelementId = nextconnector.Owner.Id;
                                     }
-                                    else
-                                    { continue; }
+                                    else if (nextconnector.Direction is FlowDirectionType.Bidirectional && nextconnector.Flow != 0)
+                                    {
+                                        if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.Contains(nextconnector.Owner.Id))
+                                        {
+                                            foundedelementId = nextconnector.Owner.Id;
+                                        }
+                                        else
+                                        { continue; }
+
+                                    }
+
 
                                 }
 
-
                             }
+                            else
+                            { continue; }
 
                             
+
+
                         }
 
 
@@ -172,9 +181,9 @@ namespace Hidraulic_Calc_alpha
 
 
             }
-            catch
+            catch (Exception ex)
             {
-                TaskDialog.Show("Error", $"{element.Id} не отработал ");
+                TaskDialog.Show("Error", $"{ex.ToString()} \n {element.Id} не отработал ");
 
             }
 
