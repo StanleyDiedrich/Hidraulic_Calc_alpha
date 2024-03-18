@@ -677,6 +677,7 @@ namespace Hidraulic_Calc_alpha
                     ElementId f = null;
                     string name = "";
                     int counter = 0;
+                    
                     try
                     {
                         do
@@ -702,39 +703,39 @@ namespace Hidraulic_Calc_alpha
                                     }
                                 }
                             }
-                                /*foreach ( var foundedelements4 in  listoffoundedelements)
+                            /*foreach ( var foundedelements4 in  listoffoundedelements)
+                            {
+                                foreach ( var foundedelement4 in  foundedelements4.Keys)
                                 {
-                                    foreach ( var foundedelement4 in  foundedelements4.Keys)
-                                    {
-                                        if (f==foundedelement4)
-                                        { break; }
-                                    }
-                                }*/
-                                /*string param = null;
-                                Element selelem = doc.GetElement(f);
-                                if (selelem is FamilyInstance)
-                                {
-                                    FamilyInstance fI = doc.GetElement(f) as FamilyInstance;
-                                     param = fI.LookupParameter("ADSK_Группирование").AsString();
+                                    if (f==foundedelement4)
+                                    { break; }
                                 }
-                                if (selelem is Pipe)
-                                {
-                                    Pipe fI = doc.GetElement(f) as Pipe;
-                                    param = fI.LookupParameter("ADSK_Группирование").AsString();*/
-                            
-                                
-                               
-                                /*if (param == null)
-                                {*/
-                                    
-                                //}
-                                
+                            }*/
+                            /*string param = null;
+                            Element selelem = doc.GetElement(f);
+                            if (selelem is FamilyInstance)
+                            {
+                                FamilyInstance fI = doc.GetElement(f) as FamilyInstance;
+                                 param = fI.LookupParameter("ADSK_Группирование").AsString();
+                            }
+                            if (selelem is Pipe)
+                            {
+                                Pipe fI = doc.GetElement(f) as Pipe;
+                                param = fI.LookupParameter("ADSK_Группирование").AsString();*/
+
+
+
+                            /*if (param == null)
+                            {*/
+
+                            //}
 
 
 
 
 
-                            
+
+
                             else
                             {
                                 break;
@@ -745,9 +746,15 @@ namespace Hidraulic_Calc_alpha
                             if (step ==1000)
                             { break; }*/
 
-
+                            counter++;
+                            if (counter == 1000)
+                            {
+                                TaskDialog.Show("R", $"проверь соединение на элементе { f.IntegerValue.ToString()}");
+                                break;
+                            }
 
                         }
+                        
                         while (f != nextelement || f == null );
                         listoffoundedelements2.Add(foundedelements);
                     }
@@ -758,7 +765,7 @@ namespace Hidraulic_Calc_alpha
 
                 }
 
-                int rizer = 2;
+                int rizer = 1;
                 foreach (var listoffoundedelement in listoffoundedelements2)
                 {
                    
