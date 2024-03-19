@@ -12,6 +12,7 @@ using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
+using static Hidraulic_Calc_alpha.Command;
 
 namespace Hidraulic_Calc_alpha
 {
@@ -35,6 +36,39 @@ namespace Hidraulic_Calc_alpha
             }
 
         }
+        public Dictionary<ElementId, string> FindCollectors (Document doc, string selectedsystem)
+        {
+            Dictionary<ElementId, string> selectedcollectors = new Dictionary<ElementId, string>();
+            Element startElement = null;
+            IList<Element> virtualequipments = new FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_PipeAccessory).WhereElementIsNotElementType().ToElements();
+            foreach (Element virtualequipment in virtualequipments)
+            {
+                Family family = virtualequipment as Family;
+                FamilyInstance familyInstance = virtualequipment as FamilyInstance;
+                FamilySymbol familySymbol = familyInstance.Symbol;
+                ElementType elementType = familySymbol as ElementType;
+                string familyName = elementType.FamilyName;
+                string start = "";
+                if (familyInstance != null)
+                {
+                    if (familyName.Contains("Коллектор") || familyName.Contains("Этажный")|| familyName.Contains("470"))
+                    {
+                        if (familyInstance.LookupParameter("ADSK_Группирование").AsString()==null|| familyInstance.LookupParameter("ADSK_Группирование").AsString().Equals("0"))
+                        
+                        if (!selectedcollectors.ContainsKey(familyInstance.Id))
+                        {
+                            selectedcollectors.Add(familyInstance.Id, selectedsystem);
+
+                        }
+                    }
+
+                }
+            }
+            return selectedcollectors;
+
+        }
+
+
         public Element FindStartConnector(Document doc, string selectedsystem)
         {
             Element startElement = null;
@@ -100,12 +134,121 @@ namespace Hidraulic_Calc_alpha
 
             }
             return systemtype;
+
+        }
+        public class NextElement
+        {
+             public ElementId Id { get; set; }
+            public bool Reverse { get; set; }
+            public List<ElementId> NextElements { get; set; }
+            public  string Parameter { get; set; }
+
+            public NextElement (ElementId elementId,List <ElementId> nextelements,  string parameter=null, bool reverse = false)
+            {
+                Id = elementId;
+                NextElements = nextelements;
+                Reverse = reverse;
+                Parameter = parameter;
+            }
+        }
+        public NextElement CheckCollector (Document doc, ElementId elementId)
+        {
+           
+            Element element = doc.GetElement(elementId);
+           
+            List<ElementId> nextelements = new List<ElementId>();
+            NextElement nextElement = new NextElement(elementId, nextelements);
+            FamilyInstance familyInstance = element as FamilyInstance;
+            MEPModel mEPModel = familyInstance.MEPModel;
+            ConnectorSet connectorSet = mEPModel.ConnectorManager.Connectors;
+            foreach (Connector connector in connectorSet)
+            {
+                string systemtype = connector.PipeSystemType.ToString();
+
+                ConnectorSet nextconnectors = connector.AllRefs;
+                    foreach (Connector nextconnector in nextconnectors)
+                    {
+
+                        if (doc.GetElement(nextconnector.Owner.Id) is PipingSystem)
+                        {
+
+                            continue;
+                        }
+                        else if (nextconnector.Owner.Id == elementId)
+                        {
+
+                            continue;
+                        }
+                        else if (nextconnectors.Size < 1)
+                        { continue; }
+
+                        else
+                        {
+                            if (nextconnector.Domain == Domain.DomainHvac || nextconnector.Domain == Domain.DomainPiping)
+                            {
+                                if (nextconnector.Owner != null)
+                                {
+                                    
+                                    // тут про наличие параметра
+                                    if (nextconnector.Owner.LookupParameter("ADSK_Группирование").AsString()==null  || nextconnector.Owner.LookupParameter("ADSK_Группирование").AsString().Equals("0"))
+                                    {
+                                    /* if (connector.PipeSystemType.ToString().Equals(systemtype))
+                                     {*/
+                                        if (nextconnector.Direction is FlowDirectionType.Out)
+                                       
+                                        {
+                                            if (systemtype == "SupplyHydronic")
+                                            {
+
+                                                    nextelements.Add(nextconnector.Owner.Id);
+                                                
+                                            }
+                                                
+                                        }
+                                        if (nextconnector.Direction is FlowDirectionType.In)
+                                        
+                                        {
+                                            if (systemtype == "ReturnHydronic")
+                                            {
+                                                    nextelements.Add(nextconnector.Owner.Id);
+                                               
+
+
+                                            }
+                                                
+                                        }
+                                      //  }
+                                        
+                                    }
+                                    else
+                                    {
+                                        continue;
+
+                                    }
+                                    
+
+                                }
+                                
+                            }
+                        }
+
+
+                    }
+                
+            }
+            nextElement.Id = elementId;
+            nextElement.Reverse = true;
+            nextElement.NextElements = nextelements;
+            
+
+            return nextElement;
         }
         public ElementId FindNextElement(Document doc, ElementId elementId, Dictionary<ElementId, string> foundedelements, string systemtype)
         {
 
             ElementId ownerId = elementId;
             Element element = doc.GetElement(ownerId);
+
             Element foundedElement = null;
             MEPModel mepModel = null;
             ConnectorSet connectorSet = null;
@@ -431,6 +574,7 @@ namespace Hidraulic_Calc_alpha
 
             Dictionary<ElementId, string> virtualequipments = new Dictionary<ElementId, string>();
             List<Dictionary<ElementId, string>> secondaryelements = new List<Dictionary<ElementId, string>>();
+            Dictionary <ElementId, string> collectors = new Dictionary<ElementId, string>();
             foreach (string system in selectedSystems.preparedsystems)
             {
                 try
@@ -439,6 +583,7 @@ namespace Hidraulic_Calc_alpha
                     virtualequipments.Add(element.Id, system);
                     var secondaryelement = FindSecondaryStartConnector(doc, system);
                     secondaryelements.Add(secondaryelement);
+                    collectors = FindCollectors(doc, system);
                 }
                 catch
                 {
@@ -932,11 +1077,200 @@ namespace Hidraulic_Calc_alpha
 
                 }
                 uidoc.Selection.SetElementIds(selectedelementIds) ;*/
+                List<Dictionary<ElementId,string>> listoffoundedelements4 = new List<Dictionary<ElementId,string>>();
+                Dictionary<ElementId, string> foundedelements4 = new Dictionary<ElementId, string>();
+                foreach (var collector in collectors)
+                {
+                    /*string selectedsystem = collector.Value.ToString();
+                    ElementId elementId = collector.Key;
 
 
+                   
+                    foundedelements4.Add(elementId, selectedsystem);
+                    Element element = doc.GetElement(elementId);
+                    string systemtype = GetSystemType(element);
+                    var foundedelement = FindNextElement(doc, elementId, foundedelements4, systemtype);
+                    foundedelements4.Add(foundedelement, selectedsystem);
+                    int index = foundedelements4.Count - 1;
+                    ElementId nextelement = null;
+
+                    ElementId f = null;
+                    string name = "";
+                    int counter = 0;
+                    try
+                    {
+                        do
+                        {
+
+                            nextelement = foundedelements4.Last().Key;
+                            string newparameter = "";
+                            f = FindNextElement(doc, nextelement, foundedelements4, systemtype);
+                            if (f != null)
+                            {
+                                
+                                
+                                if (!foundedelements4.ContainsKey(f))
+                                {
+                                    Element element4 = doc.GetElement(f);
+                                    if (element4 is Pipe)
+                                    {
+                                        Pipe familyInstance = element4 as Pipe;
+                                        string newparam = "";
+
+                                        try
+                                        {
+                                            var level = doc.GetElement(f).LevelId;
+                                            string levelname = doc.GetElement(level).Name;
+                                            
+                                            string param = familyInstance.LookupParameter("ADSK_Группирование").AsString();
+                                            if (param.Contains("MainWay") || param.Contains("Branch"))
+                                            {
+                                                if (param.Contains("MainWay"))
+                                                {
+
+                                                    newparam = familyInstance.LookupParameter("ADSK_Группирование").AsString();
+                                                    string[] strings = newparam.Split('_');
+                                                    string system = strings[0];
+                                                    string branch = "1";
+                                                    string rizer4 = strings[2];
+                                                    string branch4 = strings[3];
+                                                    newparameter = system + "_" + branch + "_" + rizer4 + "_" + branch4;
+
+
+                                                }
+                                                else
+                                                {
+                                                    newparam = familyInstance.LookupParameter("ADSK_Группирование").AsString();
+                                                    string[] strings = newparam.Split('_');
+                                                    string system = strings[0];
+                                                    string branch = strings[1];
+                                                    string rizer4 = strings[2];
+                                                    string branch4 = strings[3];
+                                                    newparameter = system + "_" + branch + "_" + rizer4 + "_" + branch4;
+
+                                                }
+
+                                               
+                                            }
+                                        }
+                                        catch { }
+                                    }
+                                    if (f is FamilyInstance)
+                                    {
+                                        string newparam = "";
+                                        FamilyInstance familyInstance = element4 as FamilyInstance;
+                                        try
+                                        {
+                                            var level = doc.GetElement(f).LevelId;
+                                            string levelname = doc.GetElement(level).Name;
+                                            
+                                            string param = familyInstance.LookupParameter("ADSK_Группирование").AsString();
+                                            if (param.Contains("MainWay") || param.Contains("Branch"))
+                                            {
+                                                if (param.Contains("MainWay"))
+                                                {
+
+                                                    newparam = familyInstance.LookupParameter("ADSK_Группирование").AsString();
+                                                    string[] strings = newparam.Split('_');
+                                                    string system = strings[0];
+                                                    string branch = "1";
+                                                    string rizer4 = strings[2];
+                                                    string branch4 = strings[3];
+                                                    newparameter = system + "_" + branch + "_" + rizer4 + "_" + branch4;
+
+
+                                                }
+                                                else
+                                                {
+                                                    newparam = familyInstance.LookupParameter("ADSK_Группирование").AsString();
+                                                    string[] strings = newparam.Split('_');
+                                                    string system = strings[0];
+                                                    string branch = strings[1];
+                                                    string rizer4 = strings[2];
+                                                    string branch4 = strings[3];
+                                                    newparameter = system + "_" + branch + "_" + rizer4 + "_" + branch4;
+
+                                                }
+
+                                                
+                                            }
+                                        }
+                                        catch { }
+                                    }
+
+                                    if (f != nextelement)
+                                    {
+                                        foundedelements4.Add(f, newparameter);
+                                    }
+                                    else
+                                    {
+                                        continue;
+                                    }
+                                }
+
+
+
+                            }
+                            else
+                            {
+                                break;
+
+                            }
+
+
+
+
+                            counter++;
+                            if (counter==1000)
+                            { break; }
+
+                        }
+                        while (f != nextelement || f == null);
+                       // listoffoundedelements4.Add(foundedelements);
+                    }
+                    catch { }*/
+                }
 
                 
             }
+            string text5 = string.Empty;
+            var checkedConnectors = new List<NextElement>();
+            foreach (var fE in collectors)
+
+            {
+
+                ElementId elementId = fE.Key;
+                var checkedConnector = CheckCollector(doc, elementId);
+                if (checkedConnector != null)
+                {
+
+                    checkedConnectors.Add(checkedConnector);
+                }
+
+
+
+                //string newparam = fE.Value;
+
+
+
+            }
+           
+            foreach (var chConnector in checkedConnectors)
+            {
+                List<ElementId> chNextElements = chConnector.NextElements;
+                string b = "";
+                foreach (var chNextElement in chNextElements)
+                {
+                    string c = chNextElement.ToString();
+                    b += c+" ";
+                   
+                }
+                string a = $"{chConnector.Id}: {b} \n";
+                text5 += a;
+
+            }
+
+            TaskDialog.Show("Список элементов", text5);
             return Result.Succeeded;
         }
     }
