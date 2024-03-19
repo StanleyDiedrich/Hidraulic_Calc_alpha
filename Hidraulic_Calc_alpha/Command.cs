@@ -574,6 +574,7 @@ namespace Hidraulic_Calc_alpha
 
             Dictionary<ElementId, string> virtualequipments = new Dictionary<ElementId, string>();
             List<Dictionary<ElementId, string>> secondaryelements = new List<Dictionary<ElementId, string>>();
+            List<Dictionary<ElementId, string>> tertiaryelements  = new List<Dictionary<ElementId, string>>();
             Dictionary <ElementId, string> collectors = new Dictionary<ElementId, string>();
             foreach (string system in selectedSystems.preparedsystems)
             {
@@ -1255,20 +1256,97 @@ namespace Hidraulic_Calc_alpha
 
             }
            
-            foreach (var chConnector in checkedConnectors)
-            {
-                List<ElementId> chNextElements = chConnector.NextElements;
-                string b = "";
-                foreach (var chNextElement in chNextElements)
+             List<Dictionary<ElementId,string>> listoffoundedelements6 = new List<Dictionary<ElementId,string>>();
+            
+                Dictionary<ElementId, string> tertiarys = new Dictionary<ElementId, string>();
+                foreach (string system in selectedSystems.preparedsystems)
                 {
-                    string c = chNextElement.ToString();
-                    b += c+" ";
-                   
+                foreach (var chConnector in checkedConnectors)
+                {
+                    
+                        ElementId elementId = chConnector.Id;
+
+                        tertiarys.Add(elementId, system);
+                        Dictionary<ElementId, string> foundedelements6 = new Dictionary<ElementId, string>();
+                        foundedelements6.Add(elementId, system);
+                        Element element = doc.GetElement(elementId);
+                        string systemtype = GetSystemType(element);
+                        var foundedelement = FindNextElement(doc, elementId, foundedelements6, systemtype);
+                        foundedelements6.Add(foundedelement, system);
+                        int index = foundedelements6.Count - 1;
+                        ElementId nextelement = null;
+
+                        ElementId f = null;
+                        string name = "";
+                        int counter = 0;
+                        try
+                        {
+                            do
+                            {
+
+                                nextelement = foundedelements6.Last().Key;
+
+                                f = FindNextElement(doc, nextelement, foundedelements6, systemtype);
+                                if (f != null)
+                                {
+
+
+                                    if (!foundedelements6.ContainsKey(f))
+                                    {
+
+                                        if (f != nextelement)
+                                        {
+                                            foundedelements6.Add(f,system);
+                                        }
+                                        else
+                                        {
+                                            continue;
+                                        }
+                                    }
+
+
+
+                                }
+                                else
+                                {
+                                    break;
+
+                                }
+
+
+
+
+                                counter++;
+                                if (counter == 1000)
+                                {
+                                    break;
+                                }
+
+                            }
+                            while (f != nextelement || f == null);
+                            listoffoundedelements6.Add(foundedelements6);
+                            //TaskDialog.Show("Res", selectedelement.Id.ToString());
+
+
+                        }
+                        catch (Exception ex)
+                        {
+
+                        }
+
+                    
                 }
-                string a = $"{chConnector.Id}: {b} \n";
-                text5 += a;
+               
+               
 
             }
+                /*string a = $"{chConnector.Id}: {b} \n";
+                text5 += a;*/
+
+
+
+               
+                
 
             TaskDialog.Show("Список элементов", text5);
             return Result.Succeeded;
