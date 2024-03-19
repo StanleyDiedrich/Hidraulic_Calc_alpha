@@ -12,6 +12,7 @@ using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
+using static System.Net.Mime.MediaTypeNames;
 using static Hidraulic_Calc_alpha.Command;
 
 namespace Hidraulic_Calc_alpha
@@ -1261,94 +1262,108 @@ namespace Hidraulic_Calc_alpha
                 Dictionary<ElementId, string> tertiarys = new Dictionary<ElementId, string>();
                 foreach (string system in selectedSystems.preparedsystems)
                 {
-                foreach (var chConnector in checkedConnectors)
-                {
+                    foreach (var chConnector in checkedConnectors)
+                    {
                     
-                        ElementId elementId = chConnector.Id;
+                            ElementId elementId = chConnector.Id;
 
-                        tertiarys.Add(elementId, system);
-                        Dictionary<ElementId, string> foundedelements6 = new Dictionary<ElementId, string>();
-                        foundedelements6.Add(elementId, system);
-                        Element element = doc.GetElement(elementId);
-                        string systemtype = GetSystemType(element);
-                        var foundedelement = FindNextElement(doc, elementId, foundedelements6, systemtype);
-                        foundedelements6.Add(foundedelement, system);
-                        int index = foundedelements6.Count - 1;
-                        ElementId nextelement = null;
+                            //tertiarys.Add(elementId, system);
+                            Dictionary<ElementId, string> foundedelements6 = new Dictionary<ElementId, string>();
+                            foundedelements6.Add(elementId, system);
+                            Element element = doc.GetElement(elementId);
+                            string systemtype = GetSystemType(element);
+                            var foundedelement = FindNextElement(doc, elementId, foundedelements6, systemtype);
+                           // tertiarys.Add(foundedelement, system);
+                            int index = foundedelements6.Count - 1;
+                            ElementId nextelement = null;
 
-                        ElementId f = null;
-                        string name = "";
-                        int counter = 0;
-                        try
-                        {
-                            do
+                            ElementId f = null;
+                            string name = "";
+                            int counter = 0;
+                            try
                             {
-
-                                nextelement = foundedelements6.Last().Key;
-
-                                f = FindNextElement(doc, nextelement, foundedelements6, systemtype);
-                                if (f != null)
+                                do
                                 {
 
+                                    nextelement = foundedelements6.Last().Key;
 
-                                    if (!foundedelements6.ContainsKey(f))
+                                    f = FindNextElement(doc, nextelement, foundedelements6, systemtype);
+                                    FamilyInstance familyInstance = doc.GetElement(f) as FamilyInstance;
+                                    string param = familyInstance.LookupParameter("ADSK_Группирование").AsString();
+                                
+                                    if (f != null && param==null )
                                     {
 
-                                        if (f != nextelement)
+
+                                        if (!tertiarys.ContainsKey(f))
                                         {
-                                            foundedelements6.Add(f,system);
+
+                                            if (f != nextelement)
+                                            {
+                                                tertiarys.Add(f,system);
+                                            }
+                                            else
+                                            {
+                                                continue;
+                                            }
                                         }
-                                        else
-                                        {
-                                            continue;
-                                        }
+
+
+
+                                    }
+                                    else
+                                    {
+                                        break;
+
                                     }
 
 
 
-                                }
-                                else
-                                {
-                                    break;
+
+                                    counter++;
+                                    if (counter == 1000)
+                                    {
+                                        break;
+                                    }
 
                                 }
+                                while (f != nextelement || f == null);
+                                listoffoundedelements6.Add(tertiarys);
+                            
+                                //TaskDialog.Show("Res", selectedelement.Id.ToString());
 
-
-
-
-                                counter++;
-                                if (counter == 1000)
-                                {
-                                    break;
-                                }
 
                             }
-                            while (f != nextelement || f == null);
-                            listoffoundedelements6.Add(foundedelements6);
-                            //TaskDialog.Show("Res", selectedelement.Id.ToString());
-
-
-                        }
-                        catch (Exception ex)
-                        {
-
-                        }
+                            catch (Exception ex)
+                            {
+                            }
 
                     
-                }
-               
-               
+                    }
+                    string text7 = "";
+                    foreach (var foundedelements in listoffoundedelements6)
+                    {
+                        foreach (var foundedelement7 in foundedelements)
+                        {
+                            string a = foundedelement7.Key.ToString() + '\n';
+                            text += a;
+                        }
+
+                    }
+                    TaskDialog.Show("Список элементов", text7);
+
 
             }
-                /*string a = $"{chConnector.Id}: {b} \n";
-                text5 += a;*/
+            
+            /*string a = $"{chConnector.Id}: {b} \n";
+            text5 += a;*/
 
 
 
-               
-                
 
-            TaskDialog.Show("Список элементов", text5);
+
+
+
             return Result.Succeeded;
         }
     }
