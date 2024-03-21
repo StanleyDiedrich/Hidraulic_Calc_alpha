@@ -226,8 +226,7 @@ namespace Hidraulic_Calc_alpha
                                 // тут про наличие параметра
                                 if (nextconnector.Owner.LookupParameter("ADSK_Группирование").AsString() == null || nextconnector.Owner.LookupParameter("ADSK_Группирование").AsString().Equals("0"))
                                 {
-                                    /* if (connector.PipeSystemType.ToString().Equals(systemtype))
-                                     {*/
+                                   
                                     if (nextconnector.Direction is FlowDirectionType.Out)
 
                                     {
@@ -251,7 +250,7 @@ namespace Hidraulic_Calc_alpha
                                         }
 
                                     }
-                                    //  }
+                                   
 
                                 }
                                 else
@@ -333,11 +332,7 @@ namespace Hidraulic_Calc_alpha
                             else if (nextconnectors.Size < 1)
                             { continue; }
 
-                            /*else if (nextconnectors.Size==1)
-                            {
-                                continue;
-                            }*/
-
+                           
 
 
                             else
@@ -460,7 +455,7 @@ namespace Hidraulic_Calc_alpha
                 }
                 if (element is FlexPipe)
                 {
-                    FlexDuct pipe = element as FlexDuct;
+                    FlexPipe pipe = element as FlexPipe;
                     connectorSet = pipe.ConnectorManager.Connectors;
                 }
 
@@ -496,88 +491,194 @@ namespace Hidraulic_Calc_alpha
                             else
                             {
 
-
+                                string param = nextconnector.Owner.LookupParameter("ADSK_Группирование").AsString();
 
                                 if (nextconnector.Domain == Domain.DomainHvac || nextconnector.Domain == Domain.DomainPiping)
                                 {
-                                    double nextconnectorfflow = nextconnector.Flow;
-                                    if (systemtype == "ReturnHydronic")
+
+
+                                    if (param != null)
                                     {
-                                        if (nextconnector.Direction is FlowDirectionType.Out)
+                                        if (param.Contains("MainWay") || param.Contains("BranchWay"))
                                         {
-                                            if (nextconnectorfflow > connectorflow || nextconnectorfflow == connectorflow)
-                                            {
-                                                foundedelementId = nextconnector.Owner.Id;
-                                            }
-
 
                                         }
-                                        else if (nextconnector.Direction is FlowDirectionType.Bidirectional && nextconnector.Flow != 0)
+                                        if (param.Equals("0"))
                                         {
-                                            if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.ContainsKey(nextconnector.Owner.Id))
+                                            if (systemtype == "ReturnHydronic")
                                             {
-                                                foundedelementId = nextconnector.Owner.Id;
+                                                if (nextconnector.Direction is FlowDirectionType.Out)
+                                                {
+                                                    if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.ContainsKey(nextconnector.Owner.Id))
+                                                    {
+                                                        if (nextconnector.Owner != null)
+                                                        {
+                                                            foundedelementId = nextconnector.Owner.Id;
+                                                        }
+
+
+                                                    }
+                                                    else
+                                                    { continue; }
+
+
+                                                }
+
+                                                else if (nextconnector.Direction is FlowDirectionType.Bidirectional && nextconnector.Flow != 0)
+                                                {
+
+                                                    if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.ContainsKey(nextconnector.Owner.Id))
+                                                    {
+                                                        if (nextconnector.Owner != null)
+                                                        {
+                                                            foundedelementId = nextconnector.Owner.Id;
+                                                        }
+                                                    }
+
+
+                                                    else
+                                                    { continue; }
+
+                                                }
                                             }
+                                            if (systemtype == "SupplyHydronic")
+                                            {
+
+                                                if (nextconnector.Direction is FlowDirectionType.In)
+                                                {
+
+                                                    if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.ContainsKey(nextconnector.Owner.Id))
+                                                    {
+                                                        if (nextconnector.Owner != null)
+                                                        {
+                                                            foundedelementId = nextconnector.Owner.Id;
+                                                        }
+                                                    }
+
+                                                }
+                                                else if (nextconnector.Direction is FlowDirectionType.Bidirectional)
+                                                {
+
+
+                                                    if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.ContainsKey(nextconnector.Owner.Id))
+                                                    {
+                                                        if (nextconnector.Owner != null)
+                                                        {
+                                                            foundedelementId = nextconnector.Owner.Id;
+                                                        }
+                                                    }
+                                                    else
+                                                    { continue; }
+
+
+
+                                                }
+                                                else { continue; }
+
+
+                                            }
+
+                                            
                                             else
-                                            { continue; }
+                                            {
+                                                continue;
+
+                                            }
+
+
 
                                         }
-
+                                        else { continue; }
 
                                     }
-                                    if (systemtype == "SupplyHydronic")
+                                    else if (param == null)
                                     {
-                                        if (nextconnector.Direction is FlowDirectionType.In)
+                                        if (systemtype == "ReturnHydronic")
                                         {
-
-
-                                            foundedelementId = nextconnector.Owner.Id;
-
-
-
-                                        }
-                                        else if (nextconnector.Direction is FlowDirectionType.Bidirectional)
-                                        {
-                                            if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.ContainsKey(nextconnector.Owner.Id))
+                                            if (nextconnector.Direction is FlowDirectionType.Out)
                                             {
-                                                foundedelementId = nextconnector.Owner.Id;
+                                                if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.ContainsKey(nextconnector.Owner.Id))
+                                                {
+                                                    if (nextconnector.Owner != null)
+                                                    {
+                                                        foundedelementId = nextconnector.Owner.Id;
+                                                    }
+
+
+                                                }
+                                                else
+                                                { continue; }
+
+
                                             }
-                                            else
-                                            { continue; }
+
+                                            else if (nextconnector.Direction is FlowDirectionType.Bidirectional && nextconnector.Flow != 0)
+                                            {
+
+                                                if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.ContainsKey(nextconnector.Owner.Id))
+                                                {
+                                                    if (nextconnector.Owner != null)
+                                                    {
+                                                        foundedelementId = nextconnector.Owner.Id;
+                                                    }
+                                                }
+
+
+                                                else
+                                                { continue; }
+
+                                            }
+                                        }
+                                        if (systemtype == "SupplyHydronic")
+                                        {
+
+                                            if (nextconnector.Direction is FlowDirectionType.In)
+                                            {
+
+                                                if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.ContainsKey(nextconnector.Owner.Id))
+                                                {
+                                                    if (nextconnector.Owner != null)
+                                                    {
+                                                        foundedelementId = nextconnector.Owner.Id;
+                                                    }
+                                                }
+
+                                            }
+                                            else if (nextconnector.Direction is FlowDirectionType.Bidirectional)
+                                            {
+
+
+                                                if (!nextconnector.Owner.Id.Equals(ownerId) || !foundedelements.ContainsKey(nextconnector.Owner.Id))
+                                                {
+                                                    if (nextconnector.Owner != null)
+                                                    {
+                                                        foundedelementId = nextconnector.Owner.Id;
+                                                    }
+                                                }
+                                                else
+                                                { continue; }
+
+
+
+                                            }
+                                            else { continue; }
+
+
 
                                         }
-
-
                                     }
 
                                 }
-                                else
-                                { continue; }
-
-
-
-
                             }
                         }
 
-
-
-
-
-
-
-
-
                     }
-                    else { continue; }
-
-
-
                 }
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("Error", $"{ex.ToString()} \n {element.Id} не отработал ");
+                /* TaskDialog.Show("Error", $"{ex.ToString()} \n {element.Id} не отработал ");
+                 TaskDialog.Show ( "Error", doc.GetElement(element.Id).LookupParameter("ADSK_Группирование").AsString() );*/
 
             }
 
@@ -593,16 +694,7 @@ namespace Hidraulic_Calc_alpha
             SelectedSystems selectedSystems = new SelectedSystems();
             selectedSystems.preparedsystems = window._selectedsystems.preparedsystems;
             string text = string.Empty;
-            /*foreach (string a in selectedSystems.preparedsystems)
-            {
-                if (!text.Contains(a))
-                {
-                    text += a + '\n';
-                }
-
-
-            }
-            TaskDialog.Show("Смотри че", $"{text}\n");*/
+           
             var count = 0;
             List<Dictionary<ElementId, string>> listoffoundedelements = new List<Dictionary<ElementId, string>>();
 
@@ -688,7 +780,7 @@ namespace Hidraulic_Calc_alpha
                     }
                     while (f != nextelement || f == null);
                     listoffoundedelements.Add(foundedelements);
-                    //TaskDialog.Show("Res", selectedelement.Id.ToString());
+                  
 
 
                 }
@@ -732,17 +824,7 @@ namespace Hidraulic_Calc_alpha
                             FamilyInstance familyInstance = element2 as FamilyInstance;
 
                             MEPModel mepmodel = familyInstance.MEPModel;
-                            /* MechanicalFitting fitting = mepmodel as MechanicalFitting;
-                             if (fitting != null && fitting.PartType == PartType.Tee)
-                             {
-                                 Tees tees = new Tees(foundedelement2.Key, doc.GetElement(element2.LevelId).Name, foundedelement2.Value);
-                                 if (!tees1.Contains(tees))
-                                 {
-                                     tees1.Add(tees);
-                                 }
-
-
-                             }*/
+                            
                             ConnectorSet connectorSet = mepmodel.ConnectorManager.Connectors;
                             double area = 0;
                             double flow = 0;
@@ -884,49 +966,14 @@ namespace Hidraulic_Calc_alpha
                                     }
                                 }
                             }
-                            /*foreach ( var foundedelements4 in  listoffoundedelements)
-                            {
-                                foreach ( var foundedelement4 in  foundedelements4.Keys)
-                                {
-                                    if (f==foundedelement4)
-                                    { break; }
-                                }
-                            }*/
-                            /*string param = null;
-                            Element selelem = doc.GetElement(f);
-                            if (selelem is FamilyInstance)
-                            {
-                                FamilyInstance fI = doc.GetElement(f) as FamilyInstance;
-                                 param = fI.LookupParameter("ADSK_Группирование").AsString();
-                            }
-                            if (selelem is Pipe)
-                            {
-                                Pipe fI = doc.GetElement(f) as Pipe;
-                                param = fI.LookupParameter("ADSK_Группирование").AsString();*/
-
-
-
-                            /*if (param == null)
-                            {*/
-
-                            //}
-
-
-
-
-
-
-
+                           
                             else
                             {
                                 break;
 
                             }
 
-                            /*step++;
-                            if (step ==1000)
-                            { break; }*/
-
+                           
                             counter++;
                             if (counter == 1000)
                             {
@@ -1101,18 +1148,7 @@ namespace Hidraulic_Calc_alpha
                     }
                     rizer++;
                 }
-                /*uidoc.Selection.SetElementIds(selectedelementIds);
-
-                List<ElementId> selectedelementIds = new List<ElementId>();
-                foreach (var listoffoundedelement in listoffoundedelements2)
-                {
-                    foreach (var element  in listoffoundedelement)
-                    {
-                        selectedelementIds.Add(element.Key);
-                    }
-
-                }
-                uidoc.Selection.SetElementIds(selectedelementIds) ;*/
+               
                 List<Dictionary<ElementId, string>> listoffoundedelements4 = new List<Dictionary<ElementId, string>>();
                 Dictionary<ElementId, string> foundedelements4 = new Dictionary<ElementId, string>();
                 foreach (var collector in collectors)
@@ -1286,7 +1322,7 @@ namespace Hidraulic_Calc_alpha
 
 
 
-                //string newparam = fE.Value;
+                
 
 
 
@@ -1306,21 +1342,13 @@ namespace Hidraulic_Calc_alpha
             }
             
             Dictionary<ElementId, string> newstarelements = new Dictionary<ElementId, string>();
-            /*foreach (var foundedelement7 in tertiarys)
-            {
-
-                newstarelements.Add(foundedelement7, "");
-
-
-            }*/
-            //TaskDialog.Show("Список элементов", text7);
-            //uidoc.Selection.SetElementIds(tertiarys);
+            
 
 
             List<Dictionary<ElementId, string>> listofnewstartelements = new List<Dictionary<ElementId, string>>();
-           // Dictionary<ElementId, string> newstartelement = new Dictionary<ElementId, string>();
+           
             Dictionary<ElementId, string> newstartelement2 = new Dictionary<ElementId, string>();
-            //Dictionary<ElementId, string> newstartelement = new Dictionary<ElementId, string>();
+           
             foreach (var elementId in tertiarys)
             {
                // Dictionary<ElementId, string> newstartelement2 = new Dictionary<ElementId, string>();
@@ -1549,49 +1577,134 @@ namespace Hidraulic_Calc_alpha
 
 
             }
-            string text8 = string.Empty;
-            List<ElementId> list2 = new List<ElementId>();
-            listofnewstartelements.Distinct();
-            /*foreach (var listr  in listofnewstartelements)
+
+            foreach (var newsttelements  in listofnewstartelements)
             {
-                listr.Keys.Distinct();
-                
-                foreach (var f in listr)
+                List<Dictionary<ElementId, string>> branches = new List<Dictionary<ElementId, string>>();
+                foreach (var startelement in newsttelements)
                 {
-                    list2.Add(f.Key);
-                    string a = f.ToString()+"\n";
-                    text8 += a;
+                    Dictionary<ElementId, string> foundedelements = new Dictionary<ElementId, string>();
+                    ElementId elementId = startelement.Key;
+                    string param = startelement.Value;
+                    Element element = doc.GetElement(elementId);
+                    string systemtype = GetSystemTypeExt(element);
+                    var foundedelement = ReverseFindNextElement(doc, elementId, foundedelements, systemtype);
+                    foundedelements.Add(foundedelement, param);
+                   
+
+                    ElementId nextelement = null;
+
+                    ElementId f = null;
+                    string name = "";
+                    int counter = 0;
+                    try
+                    {
+                        do
+                        {
+
+                            nextelement = foundedelements.Last().Key;
+
+                            f = ReverseFindNextElement(doc, nextelement, foundedelements, systemtype);
+                            if (f != null)
+                            {
+                                Element checkelement = doc.GetElement(f);
+                                if (checkelement != null)
+                                {
+                                    if (checkelement is FamilyInstance)
+                                    {
+                                        FamilyInstance familyInstance = checkelement as FamilyInstance;
+                                        FamilySymbol familySymbol = familyInstance.Symbol;
+                                        ElementType elementType = familySymbol as ElementType;
+                                        string familyName = elementType.FamilyName;
+                                        string start = "";
+                                        string param2 = familyInstance.LookupParameter("ADSK_Группирование").AsString();
+                                        if (familyInstance != null)
+                                        {
+                                            if (familyName.Contains("Коллектор") || familyName.Contains("Этажный") || familyName.Contains("470"))
+                                            {
+                                                if (familyInstance.LookupParameter("ADSK_Группирование").AsString() == null || familyInstance.LookupParameter("ADSK_Группирование").AsString().Equals("0"))
+
+                                                    if (!foundedelements.ContainsKey(familyInstance.Id))
+                                                    {
+                                                        foundedelements.Add(familyInstance.Id, param);
+                                                        break;
+
+                                                    }
+                                            }
+                                            else
+                                            {
+                                                if (!foundedelements.ContainsKey(f))
+                                                {
+
+                                                    if (f != nextelement)
+                                                    {
+                                                        foundedelements.Add(f, param);
+                                                    }
+                                                    else
+                                                    {
+                                                        continue;
+                                                    }
+                                                }
+
+                                            }
+                                           
+                                        }
+                                    }
+                                    if (!foundedelements.ContainsKey(f))
+                                    {
+
+                                        if (f != nextelement)
+                                        {
+                                            foundedelements.Add(f, param);
+                                        }
+                                        else
+                                        {
+                                            continue;
+                                        }
+                                    }
+                                }
+
+                               
+
+
+
+                            }
+                            else
+                            {
+                                break;
+
+                            }
+
+
+                            if (counter == 1000)
+                            { break; }
+
+                            counter++;
+
+                        }
+                        while (f != nextelement || f == null);
+                        branches.Add(foundedelements);
+
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        TaskDialog.Show("Error", ex.ToString());
+                    }
                 }
-               
-            }*/
-
-           // TaskDialog.Show("Выбранные элементы", text8);
-            TaskDialog.Show("R",listofnewstartelements.Count.ToString());
-            uidoc.Selection.SetElementIds(newstartelement2.Keys);
-            /* string text7 = "";
-             foreach (ElementId eId in newstartelement.Keys)
-             {
-                 string a = $"{eId.ToString()}\n";
-                 text7 += a;
-             }
-             TaskDialog.Show("Стартовые элементы", text7);*/
-
-
-
-            /* foreach (ElementId eId in newstartelement2.Keys)
-             {
-                 string a = $"{eId.ToString()}\n";
-                 text8 += a;
-             }
-             text8 += "\n";*/
-
-
-            // TaskDialog.Show("Стартовые элементы", text8);
-            /* foreach (ElementId eId in newstartelement2.Keys)
-             {
-                 string a = $"{eId.ToString()}\n";
-                 text8 += a;
-             }*/
+                List<ElementId> children = new List<ElementId>();
+                foreach (var branch in branches)
+                {
+                    
+                    foreach (var f in branch.Keys)
+                    {
+                        children.Add(f);
+                    }
+                }
+                uidoc.Selection.SetElementIds(children);
+            }
+            
 
             return Result.Succeeded;
         }
