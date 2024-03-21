@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
 using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.DB.Mechanical;
 using Autodesk.Revit.DB.Plumbing;
 using Autodesk.Revit.UI;
@@ -138,7 +139,7 @@ namespace Hidraulic_Calc_alpha
 
         }
 
-        public string GetSystemTypeExt (Element element)
+        public string GetSystemTypeExt(Element element)
         {
             string systemtype = "";
             MEPModel mepModel;
@@ -226,7 +227,7 @@ namespace Hidraulic_Calc_alpha
                                 // тут про наличие параметра
                                 if (nextconnector.Owner.LookupParameter("ADSK_Группирование").AsString() == null || nextconnector.Owner.LookupParameter("ADSK_Группирование").AsString().Equals("0"))
                                 {
-                                   
+
                                     if (nextconnector.Direction is FlowDirectionType.Out)
 
                                     {
@@ -250,7 +251,7 @@ namespace Hidraulic_Calc_alpha
                                         }
 
                                     }
-                                   
+
 
                                 }
                                 else
@@ -332,7 +333,7 @@ namespace Hidraulic_Calc_alpha
                             else if (nextconnectors.Size < 1)
                             { continue; }
 
-                           
+
 
 
                             else
@@ -425,6 +426,159 @@ namespace Hidraulic_Calc_alpha
 
             return foundedelementId;
 
+        }
+        public ElementId ReverseFindStartElement(Document doc, ElementId elementId, Dictionary<ElementId, string> foundedelements, string systemtype)
+        {
+
+            ElementId ownerId = elementId;
+            Element element = doc.GetElement(ownerId);
+            Element foundedElement = null;
+            MEPModel mepModel = null;
+            ConnectorSet connectorSet = null;
+            ElementId foundedelementId = null;
+            double minvolume = 1000000;
+            try
+            {
+
+                if (element is FamilyInstance)
+                {
+                    FamilyInstance FI = element as FamilyInstance;
+                    mepModel = FI.MEPModel;
+                    connectorSet = mepModel.ConnectorManager.Connectors;
+
+                }
+
+
+                if (element is Pipe)
+                {
+                    Pipe pipe = element as Pipe;
+                    connectorSet = pipe.ConnectorManager.Connectors;
+                }
+                if (element is FlexPipe)
+                {
+                    FlexPipe pipe = element as FlexPipe;
+                    connectorSet = pipe.ConnectorManager.Connectors;
+                }
+
+                foreach (Connector connector in connectorSet)
+                {
+                    if (connector.Domain == Domain.DomainHvac || connector.Domain == Domain.DomainPiping)
+                    {
+                        if (systemtype == "ReturnHydronic")
+                        {
+                            if (connector.Direction is FlowDirectionType.In)
+                            {
+
+                                if (connector.Owner != null)
+                                {
+                                    ConnectorSet nextconnectors = connector.AllRefs;
+                                    foreach (Connector nextconnector in nextconnectors)
+                                    {
+                                        if (nextconnector.Domain == Domain.DomainHvac || nextconnector.Domain == Domain.DomainPiping)
+                                        {
+                                            string param = "";
+                                            Element nextelement = nextconnector.Owner;
+                                            if (nextelement is FamilyInstance)
+                                            {
+                                                FamilyInstance nextFI = nextelement as FamilyInstance;
+                                                param = nextFI.LookupParameter("ADSK_Группирование").AsString();
+                                            }
+                                            if (nextelement is Pipe)
+                                            {
+                                                Pipe nextFI = nextelement as Pipe;
+                                                param = nextFI.LookupParameter("ADSK_Группирование").AsString();
+                                            }
+
+                                            if (param != null)
+                                            {
+                                                if (param.Contains("MainWay") || param.Contains("BranchWay"))
+                                                {
+
+                                                }
+                                                if (param.Equals("0"))
+                                                {
+                                                    foundedelementId = nextconnector.Owner.Id;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+
+
+
+
+                                        else
+                                        { continue; }
+                                    }
+
+
+                                }
+
+                            }
+                        }
+                        if (systemtype == "SupplyHydronic")
+                        {
+                            if (connector.Direction is FlowDirectionType.Out)
+                            {
+
+                                if (connector.Owner != null)
+                                {
+                                    ConnectorSet nextconnectors = connector.AllRefs;
+                                    foreach (Connector nextconnector in nextconnectors)
+                                    {
+                                        if (nextconnector.Domain == Domain.DomainHvac || nextconnector.Domain == Domain.DomainPiping)
+                                        {
+                                            string param = "";
+                                            Element nextelement = nextconnector.Owner;
+                                            if (nextelement is FamilyInstance)
+                                            {
+                                                FamilyInstance nextFI = nextelement as FamilyInstance;
+                                                param = nextFI.LookupParameter("ADSK_Группирование").AsString();
+                                            }
+                                            if (nextelement is Pipe)
+                                            {
+                                                Pipe nextFI = nextelement as Pipe;
+                                                param = nextFI.LookupParameter("ADSK_Группирование").AsString();
+                                            }
+
+                                            if (param != null)
+                                            {
+                                                if (param.Contains("MainWay") || param.Contains("BranchWay"))
+                                                {
+
+                                                }
+                                                if (param.Equals("0"))
+                                                {
+                                                    foundedelementId = nextconnector.Owner.Id;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+
+
+
+
+                                        else
+                                        { continue; }
+                                    }
+
+
+                                }
+                            }
+
+
+                        }
+                    }
+                }
+            }
+            catch
+            {
+
+            }
+              
+
+            return foundedelementId;
         }
         public ElementId ReverseFindNextElement(Document doc, ElementId elementId, Dictionary<ElementId, string> foundedelements, string systemtype)
         {
@@ -578,7 +732,7 @@ namespace Hidraulic_Calc_alpha
 
                                             }
 
-                                            
+
                                             else
                                             {
                                                 continue;
@@ -683,8 +837,11 @@ namespace Hidraulic_Calc_alpha
             }
 
             return foundedelementId;
-
         }
+
+
+
+
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             UIDocument uidoc = commandData.Application.ActiveUIDocument;
@@ -694,7 +851,7 @@ namespace Hidraulic_Calc_alpha
             SelectedSystems selectedSystems = new SelectedSystems();
             selectedSystems.preparedsystems = window._selectedsystems.preparedsystems;
             string text = string.Empty;
-           
+
             var count = 0;
             List<Dictionary<ElementId, string>> listoffoundedelements = new List<Dictionary<ElementId, string>>();
 
@@ -772,7 +929,7 @@ namespace Hidraulic_Calc_alpha
                         }
 
 
-                        if (counter ==1000)
+                        if (counter == 1000)
                         { break; }
 
                         counter++;
@@ -780,7 +937,7 @@ namespace Hidraulic_Calc_alpha
                     }
                     while (f != nextelement || f == null);
                     listoffoundedelements.Add(foundedelements);
-                  
+
 
 
                 }
@@ -824,7 +981,7 @@ namespace Hidraulic_Calc_alpha
                             FamilyInstance familyInstance = element2 as FamilyInstance;
 
                             MEPModel mepmodel = familyInstance.MEPModel;
-                            
+
                             ConnectorSet connectorSet = mepmodel.ConnectorManager.Connectors;
                             double area = 0;
                             double flow = 0;
@@ -966,14 +1123,14 @@ namespace Hidraulic_Calc_alpha
                                     }
                                 }
                             }
-                           
+
                             else
                             {
                                 break;
 
                             }
 
-                           
+
                             counter++;
                             if (counter == 1000)
                             {
@@ -1148,7 +1305,7 @@ namespace Hidraulic_Calc_alpha
                     }
                     rizer++;
                 }
-               
+
                 List<Dictionary<ElementId, string>> listoffoundedelements4 = new List<Dictionary<ElementId, string>>();
                 Dictionary<ElementId, string> foundedelements4 = new Dictionary<ElementId, string>();
                 foreach (var collector in collectors)
@@ -1157,7 +1314,7 @@ namespace Hidraulic_Calc_alpha
                     ElementId elementId = collector.Key;
 
 
-                   
+
                     foundedelements4.Add(elementId, selectedsystem);
                     Element element = doc.GetElement(elementId);
                     string systemtype = GetSystemType(element);
@@ -1179,8 +1336,8 @@ namespace Hidraulic_Calc_alpha
                             f = FindNextElement(doc, nextelement, foundedelements4, systemtype);
                             if (f != null)
                             {
-                                
-                                
+
+
                                 if (!foundedelements4.ContainsKey(f))
                                 {
                                     Element element4 = doc.GetElement(f);
@@ -1193,7 +1350,7 @@ namespace Hidraulic_Calc_alpha
                                         {
                                             var level = doc.GetElement(f).LevelId;
                                             string levelname = doc.GetElement(level).Name;
-                                            
+
                                             string param = familyInstance.LookupParameter("ADSK_Группирование").AsString();
                                             if (param.Contains("MainWay") || param.Contains("Branch"))
                                             {
@@ -1222,7 +1379,7 @@ namespace Hidraulic_Calc_alpha
 
                                                 }
 
-                                               
+
                                             }
                                         }
                                         catch { }
@@ -1235,7 +1392,7 @@ namespace Hidraulic_Calc_alpha
                                         {
                                             var level = doc.GetElement(f).LevelId;
                                             string levelname = doc.GetElement(level).Name;
-                                            
+
                                             string param = familyInstance.LookupParameter("ADSK_Группирование").AsString();
                                             if (param.Contains("MainWay") || param.Contains("Branch"))
                                             {
@@ -1264,7 +1421,7 @@ namespace Hidraulic_Calc_alpha
 
                                                 }
 
-                                                
+
                                             }
                                         }
                                         catch { }
@@ -1322,7 +1479,7 @@ namespace Hidraulic_Calc_alpha
 
 
 
-                
+
 
 
 
@@ -1340,29 +1497,29 @@ namespace Hidraulic_Calc_alpha
 
 
             }
-            
+
             Dictionary<ElementId, string> newstarelements = new Dictionary<ElementId, string>();
-            
+
 
 
             List<Dictionary<ElementId, string>> listofnewstartelements = new List<Dictionary<ElementId, string>>();
-           
+
             Dictionary<ElementId, string> newstartelement2 = new Dictionary<ElementId, string>();
-           
+
             foreach (var elementId in tertiarys)
             {
-               // Dictionary<ElementId, string> newstartelement2 = new Dictionary<ElementId, string>();
+                // Dictionary<ElementId, string> newstartelement2 = new Dictionary<ElementId, string>();
                 Dictionary<ElementId, string> newstartelement = new Dictionary<ElementId, string>();
                 string param = "";
                 Element element = doc.GetElement(elementId);
                 string systemtype = GetSystemTypeExt(element);
                 var foundedelement = FindNextElement(doc, elementId, newstartelement, systemtype);
-                newstartelement.Add(foundedelement,"");
+                newstartelement.Add(foundedelement, "");
                 if (doc.GetElement(foundedelement) is FamilyInstance)
                 {
-                   FamilyInstance FI = doc.GetElement(foundedelement) as FamilyInstance;
+                    FamilyInstance FI = doc.GetElement(foundedelement) as FamilyInstance;
                     param = FI.LookupParameter("ADSK_Группирование").AsString();
-                    if (param!=null)
+                    if (param != null)
                     {
                         if (param.Equals(""))
                         {
@@ -1376,11 +1533,11 @@ namespace Hidraulic_Calc_alpha
                             if (!newstartelement2.ContainsKey(foundedelement))
                             {
                                 newstartelement2.Add(foundedelement, param);
-                                
+
                             }
                         }
                     }
-                    
+
                 }
                 if (doc.GetElement(foundedelement) is Pipe)
                 {
@@ -1398,15 +1555,15 @@ namespace Hidraulic_Calc_alpha
                         if (!newstartelement2.ContainsKey(foundedelement))
                         {
                             newstartelement2.Add(foundedelement, param);
-                           
+
                         }
                     }
                 }
-                    
-                
+
+
                 MEPModel mepModel;
                 ConnectorSet connectorSet = null;
-               
+
                 if (element is FamilyInstance)
                 {
                     FamilyInstance FI = element as FamilyInstance;
@@ -1425,9 +1582,9 @@ namespace Hidraulic_Calc_alpha
                     FlexDuct pipe = element as FlexDuct;
                     connectorSet = pipe.ConnectorManager.Connectors;
                 }
-                
-               
-                
+
+
+
                 foreach (Connector chConnector in connectorSet)
                 {
                     systemtype = chConnector.PipeSystemType.ToString();
@@ -1448,13 +1605,13 @@ namespace Hidraulic_Calc_alpha
                     {
 
                         nextelement = newstartelement.Last().Key;
-                        
+
                         f = FindNextElement(doc, nextelement, newstartelement, systemtype);
                         if (f != null)
                         {
 
-                        
-                            Element felement = doc.GetElement(f); 
+
+                            Element felement = doc.GetElement(f);
                             if (felement is FamilyInstance)
                             {
                                 FamilyInstance FI = felement as FamilyInstance;
@@ -1476,12 +1633,13 @@ namespace Hidraulic_Calc_alpha
                             if (felement is Pipe)
                             {
                                 Pipe FI = felement as Pipe;
-                                 param = FI.LookupParameter("ADSK_Группирование").AsString();
-                                 if (param.Contains("MainWay")|| param.Contains("BranchWay"))
-                                    {
-                                
-                                    break; }
-                             
+                                param = FI.LookupParameter("ADSK_Группирование").AsString();
+                                if (param.Contains("MainWay") || param.Contains("BranchWay"))
+                                {
+
+                                    break;
+                                }
+
                             }
                             if (felement is FlexPipe)
                             {
@@ -1490,49 +1648,49 @@ namespace Hidraulic_Calc_alpha
                                 if (param.Contains("MainWay") || param.Contains("BranchWay"))
                                 { break; }
                             }
-                        
-                        
 
-                       
-                        
+
+
+
+
 
 
                             //if (!newstartelement.ContainsKey(f))
                             //{
 
-                                if (f!=nextelement)
-                                {
+                            if (f != nextelement)
+                            {
 
-                                    if (param == null || param.Equals("0"))
+                                if (param == null || param.Equals("0"))
+                                {
+                                    newstartelement.Add(f, "");
+
+                                }
+                                if (param != null)
+                                {
+                                    if (param.Contains("BranchWay") || param.Contains("MainWay"))
                                     {
-                                        newstartelement.Add(f, "");
-                                        
-                                    }
-                                    if (param!=null)
-                                    {
-                                        if (param.Contains("BranchWay") || param.Contains("MainWay"))
+                                        if (doc.GetElement(f) is Pipe)
+                                        { break; }
+                                        if (doc.GetElement(f) is FamilyInstance)
                                         {
-                                            if (doc.GetElement(f) is Pipe)
-                                            { break; }
-                                            if (doc.GetElement(f) is FamilyInstance )
+                                            if (!newstartelement2.ContainsKey(f))
                                             {
-                                                if (!newstartelement2.ContainsKey(f))
-                                                {
-                                                    newstartelement2.Add(f, param);
-                                                }
-                                                    
-                                                break;
+                                                newstartelement2.Add(f, param);
                                             }
 
+                                            break;
                                         }
+
                                     }
-                                    
                                 }
 
-                                else
-                                {
-                                    break;
-                                }
+                            }
+
+                            else
+                            {
+                                break;
+                            }
                             //}
 
 
@@ -1558,15 +1716,15 @@ namespace Hidraulic_Calc_alpha
                     listofnewstartelements.Add(newstartelement2);
 
                 }
-                catch (Exception e) 
+                catch (Exception e)
                 {
-                    TaskDialog.Show ("Error", e.ToString ());
+                    TaskDialog.Show("Error", e.ToString());
                 }
-               
+
                 // uidoc.Selection.SetElementIds(newstartelement2.Keys);
 
 
-              
+
 
 
 
@@ -1578,7 +1736,7 @@ namespace Hidraulic_Calc_alpha
 
             }
 
-            foreach (var newsttelements  in listofnewstartelements)
+            foreach (var newsttelements in listofnewstartelements)
             {
                 List<Dictionary<ElementId, string>> branches = new List<Dictionary<ElementId, string>>();
                 foreach (var startelement in newsttelements)
@@ -1588,9 +1746,13 @@ namespace Hidraulic_Calc_alpha
                     string param = startelement.Value;
                     Element element = doc.GetElement(elementId);
                     string systemtype = GetSystemTypeExt(element);
-                    var foundedelement = ReverseFindNextElement(doc, elementId, foundedelements, systemtype);
-                    foundedelements.Add(foundedelement, param);
+                    var foundedelement = ReverseFindStartElement(doc, elementId, foundedelements, systemtype);
                    
+                    foundedelements.Add(foundedelement, param);
+                    
+                  
+                    
+
 
                     ElementId nextelement = null;
 
@@ -1647,7 +1809,7 @@ namespace Hidraulic_Calc_alpha
                                                 }
 
                                             }
-                                           
+
                                         }
                                     }
                                     if (!foundedelements.ContainsKey(f))
@@ -1664,7 +1826,7 @@ namespace Hidraulic_Calc_alpha
                                     }
                                 }
 
-                               
+
 
 
 
@@ -1696,18 +1858,93 @@ namespace Hidraulic_Calc_alpha
                 List<ElementId> children = new List<ElementId>();
                 foreach (var branch in branches)
                 {
-                    
-                    foreach (var f in branch.Keys)
-                    {
-                        children.Add(f);
-                    }
-                }
-                uidoc.Selection.SetElementIds(children);
-            }
-            
 
+                    foreach (var f in branch)
+                    {
+
+                        string selectedsystem = f.Value;
+                        //string a = foundedelement2.Key.IntegerValue.ToString();
+                        //text2 += a + "\n";
+
+                        if (f.Key != null)
+                        {
+                            Element element = doc.GetElement(f.Key);
+
+
+                            if (element is FamilyInstance)
+                            {
+
+                                FamilyInstance familyInstance = element as FamilyInstance;
+
+
+
+
+                                string resstring = $"{selectedsystem}";
+
+                                using (Transaction t = new Transaction(doc, "FloorBranch"))
+                                {
+                                    try
+                                    {
+                                        t.Start();
+
+                                        familyInstance.LookupParameter("ADSK_Группирование").Set(resstring);
+                                        t.Commit();
+                                    }
+                                    catch (Exception ex)
+                                    {
+
+                                    }
+                                }
+
+                            }
+                            if (element is Pipe)
+                            {
+                                Pipe familyInstance = element as Pipe;
+
+                                ConnectorSet connectorSet = familyInstance.ConnectorManager.Connectors;
+                                double area = 0;
+                                double flow = 0;
+                                foreach (Connector connector in connectorSet)
+                                {
+
+                                    if (connector.Shape == ConnectorProfileType.Round)
+                                    {
+                                        area = Math.PI * Math.Pow(connector.Radius, 2);
+                                        flow = connector.Flow;
+                                    }
+                                    else
+                                    {
+                                        area = connector.Width * connector.Height;
+                                        flow = connector.Flow;
+                                    }
+
+
+                                }
+
+                                string resstring = $"{selectedsystem}";
+
+                                using (Transaction t = new Transaction(doc, $"FloorBranch"))
+                                {
+                                    try
+                                    {
+                                        t.Start();
+                                        familyInstance.LookupParameter("ADSK_Группирование").Set(resstring);
+                                        t.Commit();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    //uidoc.Selection.SetElementIds(children);
+                }
+            }
             return Result.Succeeded;
         }
-         
     }
 }
+
+
