@@ -1765,9 +1765,11 @@ namespace Hidraulic_Calc_alpha
                             }
                             catch { }
 
-
+                            string[] newparam = selectedsystem.Split('_');
+                            string way = newparam[1];
+                            string floor = newparam[2];
                             
-                            string resstring = $"FloorWay_{selectedsystem}";
+                            string resstring = $"FloorWay_{way}_{floor}";
 
                             using (Transaction t = new Transaction(doc, "FloorBranch"))
                             {
