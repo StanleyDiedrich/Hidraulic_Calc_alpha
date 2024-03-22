@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Security.Principal;
 using System.Text;
@@ -1978,6 +1979,8 @@ namespace Hidraulic_Calc_alpha
                    
                 
             }
+
+            // Возьня с поэтажными ответвлениями 
             List<Dictionary<ElementId, string>> branches4 = new List<Dictionary<ElementId, string>>();
             List<ElementId> checkedConnectors2 = new List<ElementId>();
             foreach (var collector2 in finalcollectors)
@@ -2118,18 +2121,195 @@ namespace Hidraulic_Calc_alpha
                 }
             }
             List<ElementId> list4 = new List<ElementId>();
+            int numbert = 0;
             foreach (var branch in branches4)
             {
-                foreach (var f in branch)
+                int number = 0;
+                string letter = "";
+
+                double prev_area = 0;
+                double prev_flow = 0;
+                foreach (var element in branch)
                 {
-                    list4.Add(f.Key);
+                    string selectedsystem = element.Value;
+                    //string way = "";
+
+                   
+                    /*if (!selectedsystem.Equals("") || !selectedsystem.Equals("0"))
+                    {
+                        string[] newparam = selectedsystem.Split('_');
+                         way = newparam[1];
+                         floor = newparam[2];
+                        
+                    }*/
+                   
+                    
+
+
+
+                   
+                    //string a = element.Key.IntegerValue.ToString();
+
+
+                    if (element.Key != null)
+                    {
+                        Element element2 = doc.GetElement(element.Key);
+
+
+
+                        if (element.Key == branch.Last().Key)
+                        {
+                            letter = "_a";
+                        }
+                        else
+                        {
+                            letter = "";
+                        }
+
+
+                        if (element2 is FamilyInstance)
+                        {
+                            FamilyInstance familyInstance = element2 as FamilyInstance;
+
+                            MEPModel mepmodel = familyInstance.MEPModel;
+
+                            ConnectorSet connectorSet = mepmodel.ConnectorManager.Connectors;
+                            double area = 0;
+                            double flow = 0;
+
+                            foreach (Connector connector in connectorSet)
+                            {
+
+                                if (connector.Shape == ConnectorProfileType.Round)
+                                {
+                                    area = Math.PI * Math.Pow(connector.Radius, 2);
+                                    flow = connector.Flow;
+                                }
+                                else
+                                {
+                                    area = connector.Width * connector.Height;
+                                    flow = connector.Flow;
+                                }
+
+
+
+                            }
+                            if (prev_area != area || prev_flow != flow)
+                            {
+                                number++;
+                                prev_area = area;
+                                prev_flow = flow;
+
+                            }
+
+                           
+                            string param = familyInstance.LookupParameter("ADSK_Группирование").AsString();
+                            try
+                            {
+                                if (param.Contains("MainWay") && param != "")
+                                {
+                                    break;
+                                }
+                            }
+                            catch { }
+                            string system = "";
+                            try
+                            {
+                                system = familyInstance.LookupParameter("Сокращение для системы").AsString();
+                            }
+                            catch { }
+
+                            var floor = doc.GetElement(familyInstance.LevelId).Name;
+                            string resstring = $"{system}_FloorWay_{floor}_{numbert}__{number}_{letter}";
+
+                            using (Transaction t = new Transaction(doc, "FloorBranch"))
+                            {
+                                try
+                                {
+                                    t.Start();
+
+                                    familyInstance.LookupParameter("ADSK_Группирование").Set(resstring);
+                                    t.Commit();
+                                }
+                                catch (Exception ex)
+                                {
+
+                                }
+                            }
+
+                        }
+                        if (element2 is Pipe)
+                        {
+                            Pipe familyInstance = element2 as Pipe;
+                            try
+                            {
+                                string param = familyInstance.LookupParameter("ADSK_Группирование").AsString();
+                                if (param.Contains("MainWay") && param != "")
+                                {
+                                    break;
+                                }
+                            }
+                            catch { }
+                            string system = familyInstance.LookupParameter("Сокращение для системы").AsString();
+
+
+
+
+
+                            var floor = familyInstance.ReferenceLevel.Name;
+                            ConnectorSet connectorSet = familyInstance.ConnectorManager.Connectors;
+                            double area = 0;
+                            double flow = 0;
+                            foreach (Connector connector in connectorSet)
+                            {
+
+                                if (connector.Shape == ConnectorProfileType.Round)
+                                {
+                                    area = Math.PI * Math.Pow(connector.Radius, 2);
+                                    flow = connector.Flow;
+                                }
+                                else
+                                {
+                                    area = connector.Width * connector.Height;
+                                    flow = connector.Flow;
+                                }
+                            }
+                            if (prev_area != area || prev_flow != flow)
+                            {
+                                number++;
+                                prev_area = area;
+                                prev_flow = flow;
+
+                            }
+
+                            string resstring = $"{system}_FloorWay_{floor}_{numbert}_{number}_{letter}";
+
+                            using (Transaction t = new Transaction(doc, $"FloorBranch"))
+                            {
+                                try
+                                {
+                                    t.Start();
+                                    familyInstance.LookupParameter("ADSK_Группирование").Set(resstring);
+                                    t.Commit();
+                                }
+                                catch (Exception ex)
+                                {
+                                    continue;
+                                }
+                            }
+                        }
+
+                    }
                 }
+                numbert++;
             }
-            uidoc.Selection.SetElementIds(list4);
-
-
             return Result.Succeeded;
         }
+          
+
+
+         
+       
          
     }
 }
