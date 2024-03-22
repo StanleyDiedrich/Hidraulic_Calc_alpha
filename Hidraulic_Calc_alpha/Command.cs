@@ -504,7 +504,7 @@ namespace Hidraulic_Calc_alpha
                                         {
 
                                         }
-                                        if (param.Equals("0"))
+                                        if (param.Equals("0") || param.Equals(""))
                                         {
                                             if (systemtype == "ReturnHydronic")
                                             {
@@ -1560,16 +1560,16 @@ namespace Hidraulic_Calc_alpha
                 {
                     TaskDialog.Show ("Error", e.ToString ());
                 }
-                uidoc.Selection.SetElementIds(newstartelement2.Keys);
+                //uidoc.Selection.SetElementIds(newstartelement2.Keys);
                 // uidoc.Selection.SetElementIds(newstartelement2.Keys);
             }
            // uidoc.Selection.SetElementIds(newstartelement2.Keys);
 
 
             List<Dictionary<ElementId, string>> branches = new List<Dictionary<ElementId, string>>();
-            foreach (var newsttelements  in listofnewstartelements)
+            foreach (var newstartelement3 in listofnewstartelements)
             {
-                foreach (var startelement in newsttelements)
+                foreach (var startelement in newstartelement3)
                 {
                     Dictionary<ElementId, string> foundedelements = new Dictionary<ElementId, string>();
                    
@@ -1691,8 +1691,17 @@ namespace Hidraulic_Calc_alpha
                 }
                 
             }
+            List<ElementId> els = new List<ElementId>();
+            foreach (var branch in branches)
+            {
+                foreach ( var br in branch.Keys)
+                {
+                    els.Add(br);
+                }
+            }
+            uidoc.Selection.SetElementIds(els);
 
-            TaskDialog.Show("Третичные списки", branches.Count().ToString());
+            //TaskDialog.Show("Третичные списки", branches.Count().ToString());
             // здесь передаем параметр с тройника в поэтажные ответвления
             List<ElementId> children = new List<ElementId>();
 
