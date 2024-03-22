@@ -1600,6 +1600,23 @@ namespace Hidraulic_Calc_alpha
                         {
 
                             nextelement = foundedelements.Last().Key;
+                            
+                            FamilyInstance familyInstance1 = doc.GetElement(nextelement) as FamilyInstance;
+                            if (familyInstance1 is FamilyInstance)
+                            {
+                                FamilySymbol familySymbol = familyInstance1.Symbol;
+                                ElementType elementType = familySymbol as ElementType;
+                                string familyName = elementType.FamilyName;
+                                
+
+                                if (familyName.Contains("Коллектор") || familyName.Contains("Этажный") || familyName.Contains("470"))
+                                {
+
+                                    break;
+
+                                }
+                            }
+                           
 
                             f = ReverseFindNextElement(doc, nextelement, foundedelements, systemtype);
                             if (f != null)
@@ -1702,6 +1719,7 @@ namespace Hidraulic_Calc_alpha
             uidoc.Selection.SetElementIds(els);
 
             //TaskDialog.Show("Третичные списки", branches.Count().ToString());
+
             // здесь передаем параметр с тройника в поэтажные ответвления
             List<ElementId> children = new List<ElementId>();
 
